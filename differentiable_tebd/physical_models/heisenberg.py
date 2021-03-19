@@ -22,6 +22,18 @@ jXX, jYY, jZZ, jX1, jX2, jX = map(jnp.array, [XX, YY, ZZ, X1, X2, X])
 
 # for state vector simulation
 def hamiltonian(params, qnum):
+    '''
+    1-D Heisenberg Hamiltonian with open boundaries (non-periodic).
+
+    Args:
+        params (array): Parameters h, x, y, z. Where h is the field strength
+            in X direction (i.e. 1-body X Paulis). x, y, and z determine the
+            strength of the XX, YY, and ZZ interactions, respectively.
+        qnum (int): Number of sites, or spins.
+
+    Returns:
+        scipy.sparse.csr_matrix: The Hamiltonian.
+    '''
     h, x, y, z = params
     out = sp.csr_matrix((2**qnum, 2**qnum), dtype=COMPLEX_TYPE)
     for i in range(qnum-1):
