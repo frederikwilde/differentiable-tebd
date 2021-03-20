@@ -8,7 +8,7 @@ from jax.ops import index_update
 import jax.numpy as jnp
 from . import COMPLEX_TYPE
 
-def generate_data_from_vecs(states, bases, num_samples):
+def generate_data_from_vecs(states, bases, num_samples, save_states=True, **draw_samples_kwargs):
     '''
     Generate measurement data from state vectors.
     Note: The format of the output is suitable if relatively few bases
@@ -23,6 +23,8 @@ def generate_data_from_vecs(states, bases, num_samples):
             1 stands for X, 2 for Y, and 3 for Z-measurements.
         num_samples (int): Number of times each state is sampled in each
             basis.
+        save_states (bool): Whether to save the states in the output dictionary.
+            Default is True.
     
     Returns:
         dict: A data dictionary with the following keys:
@@ -42,7 +44,7 @@ def generate_data_from_vecs(states, bases, num_samples):
         print(f"Sampling state {i+1}/{len(states)}", end='\r')
         hists, strings, bases_list = [], [], []
         for b in bases:
-            h, s = unique(draw_samples(state, b, num_samples))
+            h, s = unique(draw_samples(state, b, num_samples, **draw_samples_kwargs))
             hists.append(h)
             strings.append(s)
             bases_list.append(jnp.tile(b, len(h)).reshape(len(h), len(b)))
@@ -96,7 +98,7 @@ def basis_transform(basis, site, num_sites):
     else:
         raise ValueError(f'basis must be x or y, was {basis}.')
 
-def draw_samples(vec, basis, num_samples, **kwargs):
+def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
     '''
     Generate a number of measurement results, as bit strings, given a state vector.
 
@@ -105,7 +107,11 @@ def draw_samples(vec, basis, num_samples, **kwargs):
         basis (array): A basis for each site to measure in. Valid entries are 1, 2,
             and 3 for X, Y, and Z measurements, respectively.
         num_samples (int): Number of samples to draw. If non-positive integer is given
-             the full distribution in the given basis is returned.
+            the full distribution in the given basis is returned.
+        sequential_samples (bool): If true the samples are drawn sequentially. This
+            can be necessary if the vector or the number of samples is so large, that
+            not enough memory is available to allocate a (num_samples, len(vec)) shape
+            array.
     
     Kwargs:
         seed (int): Set the NumPy RNG seed.
@@ -128,11 +134,17 @@ def draw_samples(vec, basis, num_samples, **kwargs):
         return distribution
     else:
         randvar = scipy.stats.rv_discrete(values=(np.arange(2**num_sites), distribution))
-        samples = randvar.rvs(size=num_samples)
         out = np.zeros((num_samples, num_sites), dtype=int)
-        for i, s in enumerate(samples):
-            for j, b in enumerate(np.binary_repr(s)[::-1]):
-                out[i, -1*(j+1)] = int(b)
+        if sequential_samples:
+            for i in range(num_samples):
+                s = randvar.rvs(size=1)[0]
+                for j, b in enumerate(np.binary_repr(s)[::-1]):
+                    out[i, -1*(j+1)] = int(b)
+        else:
+            samples = randvar.rvs(size=num_samples)
+            for i, s in enumerate(samples):
+                for j, b in enumerate(np.binary_repr(s)[::-1]):
+                    out[i, -1*(j+1)] = int(b)
         return out
         # bitstrings = np.zeros((2**num_sites, num_sites), dtype=int)
         # for i in range(num_sites):
