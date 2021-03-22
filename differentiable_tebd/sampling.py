@@ -3,8 +3,6 @@ import scipy
 import scipy.sparse as sp
 import scipy.stats
 import numpy as np
-from jax import lax
-from jax.ops import index_update
 import jax.numpy as jnp
 from . import COMPLEX_TYPE
 

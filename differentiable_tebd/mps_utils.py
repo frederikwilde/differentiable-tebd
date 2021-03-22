@@ -1,8 +1,6 @@
-from functools import partial
 import numpy as np
 import jax
 from jax import numpy as jnp
-from jax import jit, checkpoint
 from jax.ops import index_update, index
 from . import COMPLEX_TYPE
 
@@ -17,6 +15,7 @@ Z_proj_plus = np.array([[1,0], [0,0]], dtype=COMPLEX_TYPE)
 X_proj_minus = .5 * np.array([[1,-1], [-1,1]], dtype=COMPLEX_TYPE)
 Y_proj_minus = .5 * np.array([[1,1j], [-1j,1]], dtype=COMPLEX_TYPE)
 Z_proj_minus = np.array([[0,0], [0,1]], dtype=COMPLEX_TYPE)
+
 
 class HashableArray(np.ndarray):
     def __new__(cls, input_array, info=None):
