@@ -6,51 +6,6 @@ import numpy as np
 import jax.numpy as jnp
 from . import COMPLEX_TYPE
 
-def generate_data_from_vecs(states, bases, num_samples, save_states=True, **draw_samples_kwargs):
-    '''
-    Generate measurement data from state vectors.
-    Note: The format of the output is suitable if relatively few bases
-    are to be sampled. If many bases are sampled only a few times, a
-    different format, avoiding the nested lists as described below, is
-    more suitable.
-    
-    Args:
-        states (array): A list of state vectors, each of which each will
-            be sampled.
-        bases (array[int]): List of bases to sample in.
-            1 stands for X, 2 for Y, and 3 for Z-measurements.
-        num_samples (int): Number of times each state is sampled in each
-            basis.
-        save_states (bool): Whether to save the states in the output dictionary.
-            Default is True.
-    
-    Returns:
-        dict: A data dictionary with the following keys:
-            'states': List of states from input
-            'bitstrings_list': A list of lists of arrays of bitstrings.
-                The first list has the length of states, the inner list
-                has the length of bases. The arrays are unique bitstrings,
-                that were sampled under the respective state and the respective
-                basis.
-            'bitstring_histogram_list': A list of lists of arrays containing
-                the number of times each bitstring in the respective array
-                in bitstring_list has occured.
-    '''
-    data = {}
-    data['bitstring_histogram_list'], data['bitstrings_list'] = [], []
-    for i, state in enumerate(states):
-        print(f"Sampling state {i+1}/{len(states)}", end='\r')
-        hists, strings, bases_list = [], [], []
-        for b in bases:
-            h, s = unique(draw_samples(state, b, num_samples, **draw_samples_kwargs))
-            hists.append(h)
-            strings.append(s)
-            bases_list.append(jnp.tile(b, len(h)).reshape(len(h), len(b)))
-        data['bitstring_histogram_list'].append(hists)
-        data['bitstrings_list'].append(strings)
-    data['states'] = states
-    return data
-
 def samples_from_mps(mps):
     '''
     Contracts the MPS with the specified projector and the Hermition conjugate MPS.
