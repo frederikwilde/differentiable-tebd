@@ -1,4 +1,5 @@
 from functools import lru_cache
+import warnings
 import scipy
 import scipy.sparse as sp
 import scipy.stats
@@ -67,7 +68,9 @@ def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
             array.
     
     Kwargs:
-        seed (int): Set the NumPy RNG seed.
+        rng (np.random.Generator): A RNG created with np.random.default_rng(seed).
+            Note that seed is an optional argument. If not provided, a fresh PRNG is
+            created.
     
     Returns:
         array: A list of bitstrings.
@@ -80,9 +83,13 @@ def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
             vec = basis_transform(basis[i], i, num_sites).dot(vec)
     distribution = np.abs(vec) ** 2
     distribution = distribution / distribution.sum()
+    if hasattr(kwargs, 'seed'):
+        warnings.warn('''The seed keyword argument is ignored. Instead supply a np.random.Generator
+under the keyword argument rng.''', warnings.DeprecationWarning)
     try:
-        np.random.seed(kwargs['seed'])
-    except: pass
+        rng = kwargs['rng']
+    except KeyError:
+        rng = np.random.default_rng()
     if num_samples < 1:
         return distribution
     else:
@@ -90,11 +97,11 @@ def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
         out = np.zeros((num_samples, num_sites), dtype=int)
         if sequential_samples:
             for i in range(num_samples):
-                s = randvar.rvs(size=1)[0]
+                s = randvar.rvs(size=1, random_state=rng)[0]
                 for j, b in enumerate(np.binary_repr(s)[::-1]):
                     out[i, -1*(j+1)] = int(b)
         else:
-            samples = randvar.rvs(size=num_samples)
+            samples = randvar.rvs(size=num_samples, random_state=rng)
             for i, s in enumerate(samples):
                 for j, b in enumerate(np.binary_repr(s)[::-1]):
                     out[i, -1*(j+1)] = int(b)

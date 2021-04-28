@@ -4,8 +4,6 @@ from jax import numpy as jnp
 from jax.ops import index_update, index
 from . import COMPLEX_TYPE
 
-rnd = np.random.rand
-
 X = np.array([[0, 1], [1, 0]], dtype=COMPLEX_TYPE)
 Y = np.array([[0, -1j], [1j, 0]], dtype=COMPLEX_TYPE)
 Z = np.array([[1, 0], [0, -1]], dtype=COMPLEX_TYPE)
@@ -28,13 +26,16 @@ class HashableArray(np.ndarray):
     def __ne__(self, other):
         return jnp.any(jnp.array(self) != jnp.array(other))
 
-def mps_zero_state(num_sites, chi, perturbation=None):
+def mps_zero_state(num_sites, chi, perturbation=None, rng=None):
     '''
     Args:
         num_sites (int): Number of sites.
         chi (int): Bond dimension.
         perturbation (float): Factor of random perturbation
             to add. Default is None.
+        rng (np.random.Generator): A RNG created with np.random.default_rng
+            Default is None, in which case a fresh PRNG is created.
+        
     Returns:
         array: MPS
     '''
@@ -42,7 +43,11 @@ def mps_zero_state(num_sites, chi, perturbation=None):
     for i in range(num_sites):
         mps = index_update(mps, (i, 0, 0, 0), 1.)
     if perturbation is not None:
-        return mps + perturbation * (rnd(*mps.shape) + 1.j*rnd(*mps.shape))
+        if rng is None:
+            rng = np.random.default_rng()
+        r1 = 2 * rng.random(mps.shape) - 1.
+        r2 = 2 * rng.random(mps.shape) - 1.
+        return mps + perturbation * (r1 + 1.j*r2)
     else:
         return mps
 

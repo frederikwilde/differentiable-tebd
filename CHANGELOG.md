@@ -5,9 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aims to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.0.2] - 2021-04-28
 ### Removed
 - `generate_data_from_vecs` function is only useful for creating histograms. To enable subsampling
 the bitstrings should be saved as they are.
+### Added
+- Keyword argument `seed` in `mps_utils.mps_zero_state` for reducibility and seperation from other
+PRNG calls. If not set a fresh PRNG is created with a seed generated from the OS. Also the MPS
+perturbations are now in the range `[-1, 1]` and `[-1j, 1j]` instead of `[0, 1]` and `[0, 1j]`.
+### Changed
+- Keyword argument `seed` is no longer accepted in `sampling.draw_samples`, instead a `np.random.Generator`
+can be supplied under the `rng` keyword argument.
 
 ## [0.0.1] - 2021-03-20
 ### Added
