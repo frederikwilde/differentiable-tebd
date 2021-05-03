@@ -37,21 +37,6 @@ def samples_from_mps(mps):
     #     print(left[0,0].imag)
     # return probs
 
-@lru_cache(maxsize=100)
-def basis_transform(basis, site, num_sites):
-    '''Returns a local basis transformation (as a sparse matrix) on
-    site i in a (2 ** num_sites)-dimensional system.'''
-    if site >= num_sites:
-        raise ValueError(f'Position was {site}, but must be smaller than num_sites {num_sites}')
-    if basis == 1:
-        left_half = sp.kron(sp.eye(2**site), 1/np.sqrt(2) * np.array([[1,1], [1,-1]], dtype=COMPLEX_TYPE))
-        return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
-    elif basis == 2:
-        left_half = sp.kron(sp.eye(2**site), .5 * np.array([[1+1j,1-1j], [1-1j, 1+1j]], dtype=COMPLEX_TYPE))
-        return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
-    else:
-        raise ValueError(f'basis must be x or y, was {basis}.')
-
 def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
     '''
     Generate a number of measurement results, as bit strings, given a state vector.
@@ -71,25 +56,38 @@ def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
         rng (np.random.Generator): A RNG created with np.random.default_rng(seed).
             Note that seed is an optional argument. If not provided, a fresh PRNG is
             created.
+        cache_maxsize (int): Default is 100. Disabling caching (setting this argument
+            to 0) saves memory which might be necessary for large systems.
     
     Returns:
         array: A list of bitstrings.
     '''
+    @lru_cache(maxsize=kwargs.get('cache_maxsize', 100))
+    def basis_transform(basis, site, num_sites):
+        '''Returns a local basis transformation (as a sparse matrix) on
+        site i in a (2 ** num_sites)-dimensional system.'''
+        if site >= num_sites:
+            raise ValueError(f'Position was {site}, but must be smaller than num_sites {num_sites}')
+        if basis == 1:
+            left_half = sp.kron(sp.eye(2**site), 1/np.sqrt(2) * np.array([[1,1], [1,-1]], dtype=COMPLEX_TYPE))
+            return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
+        elif basis == 2:
+            left_half = sp.kron(sp.eye(2**site), .5 * np.array([[1+1j,1-1j], [1-1j, 1+1j]], dtype=COMPLEX_TYPE))
+            return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
+        else:
+            raise ValueError(f'basis must be x or y, was {basis}.')
     num_sites = int(np.log2(vec.size))
     for i in range(num_sites):
         if basis[i] == 3:
             pass
         else:
             vec = basis_transform(basis[i], i, num_sites).dot(vec)
-    distribution = np.abs(vec) ** 2
-    distribution = distribution / distribution.sum()
+    rng = kwargs.get('rng', np.random.default_rng())
     if hasattr(kwargs, 'seed'):
         warnings.warn('''The seed keyword argument is ignored. Instead supply a np.random.Generator
 under the keyword argument rng.''', warnings.DeprecationWarning)
-    try:
-        rng = kwargs['rng']
-    except KeyError:
-        rng = np.random.default_rng()
+    distribution = np.abs(vec) ** 2
+    distribution = distribution / distribution.sum()
     if num_samples < 1:
         return distribution
     else:

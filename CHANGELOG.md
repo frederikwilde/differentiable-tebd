@@ -6,6 +6,11 @@ and this project aims to adhere to [Semantic Versioning](https://semver.org/spec
 
 ## [Unreleased]
 
+## [0.0.3] - 2021-05-03
+### Added
+- `draw_samples` accepts `cache_maxsize` as a keyword argument which controls the amount of caching
+done for basis transformations.
+
 ## [0.0.2] - 2021-04-28
 ### Removed
 - `generate_data_from_vecs` function is only useful for creating histograms. To enable subsampling
