@@ -10,6 +10,12 @@ and this project aims to adhere to [Semantic Versioning](https://semver.org/spec
 Those can be generated with the new `local_basis_transform` function. With this the number of basis
 transformations is reduced to the constant `2 * num_sites`.
 
+## [0.0.4] - 2021-05-17
+### Changed
+- `mps_utils.probability` now requires the MPS in three different bases: all-X, all-Y, and all-Z.
+Those can be generated with the new `local_basis_transform` function. With this the number of basis
+transformations is reduced to the constant `2 * num_sites`.
+
 ## [0.0.3] - 2021-05-03
 ### Added
 - `draw_samples` accepts `cache_maxsize` as a keyword argument which controls the amount of caching
