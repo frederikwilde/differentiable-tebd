@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aims to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- `mps_utils.probability` now requires the MPS in three different bases: all-X, all-Y, and all-Z.
+Those can be generated with the new `local_basis_transform` function. With this the number of basis
+transformations is reduced to the constant `2 * num_sites`.
 
 ## [0.0.3] - 2021-05-03
 ### Added
