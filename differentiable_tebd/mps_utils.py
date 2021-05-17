@@ -7,12 +7,8 @@ from . import COMPLEX_TYPE
 X = np.array([[0, 1], [1, 0]], dtype=COMPLEX_TYPE)
 Y = np.array([[0, -1j], [1j, 0]], dtype=COMPLEX_TYPE)
 Z = np.array([[1, 0], [0, -1]], dtype=COMPLEX_TYPE)
-X_proj_plus = .5 * np.array([[1,1], [1,1]], dtype=COMPLEX_TYPE)
-Y_proj_plus = .5 * np.array([[1,-1j], [1j,1]], dtype=COMPLEX_TYPE)
-Z_proj_plus = np.array([[1,0], [0,0]], dtype=COMPLEX_TYPE)
-X_proj_minus = .5 * np.array([[1,-1], [-1,1]], dtype=COMPLEX_TYPE)
-Y_proj_minus = .5 * np.array([[1,1j], [-1j,1]], dtype=COMPLEX_TYPE)
-Z_proj_minus = np.array([[0,0], [0,1]], dtype=COMPLEX_TYPE)
+Hadamard = np.array([[1,1], [1, -1]], dtype=COMPLEX_TYPE) / np.sqrt(2.)
+YHadamard = np.array([[1,-1j], [1,1j]], dtype=COMPLEX_TYPE) / np.sqrt(2.)
 
 
 class HashableArray(np.ndarray):
@@ -97,85 +93,45 @@ def norm_squared(mps):
     left, _ = jax.lax.scan(_update_left, left, mps)
     return left[0,0].real
 
-branches = [
-        lambda x: jnp.tensordot(X_proj_plus, x, axes=(1, 1)),
-        lambda x: jnp.tensordot(Y_proj_plus, x, axes=(1, 1)),
-        lambda x: jnp.tensordot(Z_proj_plus, x, axes=(1, 1)),
-        lambda x: jnp.tensordot(X_proj_minus, x, axes=(1, 1)),
-        lambda x: jnp.tensordot(Y_proj_minus, x, axes=(1, 1)),
-        lambda x: jnp.tensordot(Z_proj_minus, x, axes=(1, 1))
+def local_basis_transform(mps, basis):
+    '''
+    Args:
+        mps (array): MPS in Z basis.
+        basis (int): Either 1 or 2 for transformation into X or Y basis,
+            respectively
+        
+    Returns:
+        array: Transformed MPS.
+    '''
+    return jax.lax.cond(
+        basis==1,
+        jax.vmap(lambda t: jnp.tensordot(Hadamard, t, axes=(1,1)).transpose((1, 0, 2))),
+        jax.vmap(lambda t: jnp.tensordot(YHadamard, t, axes=(1,1)).transpose((1, 0, 2))),
+        mps
+    )
+def _update_left(left, tensors_bit_basis_tuple):
+    '''For scan function.'''
+    tX, tY, tZ, bit, basis = tensors_bit_basis_tuple
+    branches = [
+        lambda left: left.dot(tX[:, bit, :]),
+        lambda left: left.dot(tY[:, bit, :]),
+        lambda left: left.dot(tZ[:, bit, :]),
     ]
-def _update_left(left, tensor_bit_basis_tuple):
-    t, bit, basis = tensor_bit_basis_tuple
-    # index arg of switch is 1, 2, 3 for proj_minus and 4, 5, 6 for proj_plus.
-    t1 = jax.lax.switch(3 * bit + basis - 1, branches, t)
-    t2 = jnp.tensordot(left, t.conj(), axes=(1, 0))
-    return jnp.tensordot(t1, t2, axes=((1,0), (0,1))), None
+    return jax.lax.switch(basis-1, branches, left), None
 
-def probability(mps, bitstring, basis, mps_norm_squared=1.):
+def probability(mpsX, mpsY, mpsZ, bitstring, basis, mps_norm_squared=1.):
     '''
     Compute the probability of measuring a given bitstring.
 
     Args:
-        MPS (array): State which is measured.
+        mpsX (array): State in local X basis.
+        mpsY (array): State in local Y basis.
+        mpsZ (array): State in local Z basis.
         bitstring (array[int]): Measurement outcome.
         basis (Sequence[int]): Measurement basis. 1 for X, 2 for Y, 3 for Z.
         mps_norm_squared (float): Squared l2 norm of the MPS.
     '''
-    left = jnp.zeros((mps.shape[1], mps.shape[1]), dtype=COMPLEX_TYPE)
-    left = index_update(left, (0, 0), 1.)
-    left, _ = jax.lax.scan(_update_left, left, (mps, bitstring, basis))
-    return left[0,0].real / mps_norm_squared
-
-### alternative implementation of probability using vmap (is slightly slower, at least on CPU)
-# branches2 = [
-#         lambda x: jnp.tensordot(X_proj_plus, x, axes=(1, 1)).transpose((1, 0, 2)),
-#         lambda x: jnp.tensordot(Y_proj_plus, x, axes=(1, 1)).transpose((1, 0, 2)),
-#         lambda x: jnp.tensordot(Z_proj_plus, x, axes=(1, 1)).transpose((1, 0, 2)),
-#         lambda x: jnp.tensordot(X_proj_minus, x, axes=(1, 1)).transpose((1, 0, 2)),
-#         lambda x: jnp.tensordot(Y_proj_minus, x, axes=(1, 1)).transpose((1, 0, 2)),
-#         lambda x: jnp.tensordot(Z_proj_minus, x, axes=(1, 1)).transpose((1, 0, 2))
-#     ]
-# def _update_left2(left, tensor1_tensor2):
-#     t1, t2 = tensor1_tensor2
-#     t2 = jnp.tensordot(left, t2.conj(), axes=(1, 0))
-#     return jnp.tensordot(t1, t2, axes=((0,1), (0,1))), None
-
-# def _contract_projector(tensor, basis, bit):
-#     # index arg of switch is 1, 2, 3 for proj_minus and 4, 5, 6 for proj_plus.
-#     return jax.lax.switch(3 * bit + basis - 1, branches2, tensor)
-
-# def probability2(mps, bitstring, basis, mps_norm_squared=1.):
-#     '''
-#     Compute the probability of measuring a given bitstring.
-#     This version copies the entire MPS and contracts the projectors.
-#     In principle, this should be faster when the contractions are done
-#     in parallel. However, on a CPU the function 'probability' is faster.
-
-#     Args:
-#         MPS (array): State which is measured.
-#         bitstring (array[int]): Measurement outcome.
-#         basis (Sequence[int]): Measurement basis. 1 for X, 2 for Y, 3 for Z.
-#         mps_norm_squared (float): Squared l2 norm of the MPS.
-#     '''
-#     mps_proj = jax.vmap(_contract_projector, in_axes=(0, 0, 0))(mps, basis, bitstring)
-#     left = jnp.zeros((mps.shape[1], mps.shape[1]), dtype=COMPLEX_TYPE)
-#     left = index_update(left, (0, 0), 1.)
-#     left, _ = jax.lax.scan(_update_left2, left, (mps_proj, mps))
-#     return left[0,0].real / mps_norm_squared
-
-### for data only consisting of Z-basis measurements (only marginal advantage)
-def _update_left_onlyZ(left, tensor_bit_tuple):
-    '''For scan function.'''
-    t, b = tensor_bit_tuple
-    return left.dot(t[:, b, :]), None
-
-def probability_onlyZ(mps, bitstring):
-    '''
-    Calculate the probability of measuring a bitstring under the given MPS
-    in the Z basis.
-    '''
-    left = jnp.zeros(mps.shape[1], dtype=COMPLEX_TYPE)
+    left = jnp.zeros(mpsX.shape[1], dtype=COMPLEX_TYPE)
     left = index_update(left, 0, 1.)
-    left, _ = jax.lax.scan(_update_left_onlyZ, left, [mps, bitstring])
-    return jnp.abs(left[0]) ** 2
+    left, _ = jax.lax.scan(_update_left, left, [mpsX, mpsY, mpsZ, bitstring, basis])
+    return jnp.abs(left[0]) ** 2 / mps_norm_squared
