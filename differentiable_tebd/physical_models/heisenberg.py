@@ -23,7 +23,8 @@ jXX, jYY, jZZ, jX1, jX2, jX = map(jnp.array, [XX, YY, ZZ, X1, X2, X])
 # for state vector simulation
 def hamiltonian(params, qnum):
     '''
-    1-D Heisenberg Hamiltonian with open boundaries (non-periodic).
+    1-D Heisenberg Hamiltonian with open boundaries (non-periodic) a full
+    (exponentially large) matrix.
 
     Args:
         params (array): Parameters h, x, y, z. Where h is the field strength
