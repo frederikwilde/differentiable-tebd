@@ -5,10 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aims to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- New function `sampling.save_basis_transforms` pickles all basis transforms to disk. This effectively
+enables caching when the system size is very large.
+- Test module. First tests are on the `sampling` module.
 ### Changed
-- `mps_utils.probability` now requires the MPS in three different bases: all-X, all-Y, and all-Z.
-Those can be generated with the new `local_basis_transform` function. With this the number of basis
-transformations is reduced to the constant `2 * num_sites`.
+- `sampling.draw_samples` accepts `basis_transforms_dir` as a keyword argument for reading the
+the transformations from disk. The directory can be created an populated before with the new
+`sampling.save_basis_transforms` method.
 
 ## [0.0.4] - 2021-05-17
 ### Changed

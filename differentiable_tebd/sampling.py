@@ -5,6 +5,7 @@ import scipy.sparse as sp
 import scipy.stats
 import numpy as np
 import jax.numpy as jnp
+import pickle
 from . import COMPLEX_TYPE
 
 def samples_from_mps(mps):
@@ -37,12 +38,24 @@ def samples_from_mps(mps):
     #     print(left[0,0].imag)
     # return probs
 
+def save_basis_transforms(dir, num_sites):
+    '''Pickles all basis transforms to specified directory.'''
+    for i in range(num_sites):
+        left_half = sp.kron(sp.eye(2**i), 1/np.sqrt(2) * np.array([[1,1], [1,-1]], dtype=COMPLEX_TYPE))
+        t = sp.kron(left_half, sp.eye(2**(num_sites-i-1))).asformat('csr')
+        with open(f'{dir}/x{i}.pickle', 'xb') as f:
+            pickle.dump(t, f)
+        left_half = sp.kron(sp.eye(2**i), .5 * np.array([[1+1j,1-1j], [1-1j, 1+1j]], dtype=COMPLEX_TYPE))
+        t = sp.kron(left_half, sp.eye(2**(num_sites-i-1))).asformat('csr')
+        with open(f'{dir}/y{i}.pickle', 'xb') as f:
+            pickle.dump(t, f)
+
 def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
     '''
     Generate a number of measurement results, as bit strings, given a state vector.
 
     Args:
-        vec (array): state vector which is sampled in the computational basis.
+        vec (array): state vector which is sampled.
         basis (array): A basis for each site to measure in. Valid entries are 1, 2,
             and 3 for X, Y, and Z measurements, respectively.
         num_samples (int): Number of samples to draw. If non-positive integer is given
@@ -58,30 +71,50 @@ def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
             created.
         cache_maxsize (int): Default is 100. Disabling caching (setting this argument
             to 0) saves memory which might be necessary for large systems.
+        basis_transforms_dir (str): A directory containing pickled basis transformations
+            as 'x0.pickle', 'x1.pickle', ... and 'y0.pickle' and so on.
     
     Returns:
         array: A list of bitstrings.
     '''
-    @lru_cache(maxsize=kwargs.get('cache_maxsize', 100))
-    def basis_transform(basis, site, num_sites):
-        '''Returns a local basis transformation (as a sparse matrix) on
-        site i in a (2 ** num_sites)-dimensional system.'''
-        if site >= num_sites:
-            raise ValueError(f'Position was {site}, but must be smaller than num_sites {num_sites}')
-        if basis == 1:
-            left_half = sp.kron(sp.eye(2**site), 1/np.sqrt(2) * np.array([[1,1], [1,-1]], dtype=COMPLEX_TYPE))
-            return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
-        elif basis == 2:
-            left_half = sp.kron(sp.eye(2**site), .5 * np.array([[1+1j,1-1j], [1-1j, 1+1j]], dtype=COMPLEX_TYPE))
-            return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
-        else:
-            raise ValueError(f'basis must be x or y, was {basis}.')
     num_sites = int(np.log2(vec.size))
+    # define basis transform function
+    if 'basis_transforms_dir' in kwargs:
+        d = kwargs['basis_transforms_dir']
+        def basis_transform(basis, site):
+            '''Returns a local basis transformation (as a sparse matrix) on
+            site i in a (2 ** num_sites)-dimensional system.'''
+            if site >= num_sites:
+                raise ValueError(f'Position was {site}, but must be smaller than num_sites {num_sites}')
+            if basis == 1:
+                with open(f'{d}/x{site}.pickle', 'rb') as f:
+                    return pickle.load(f)
+            elif basis == 2:
+                with open(f'{d}/y{site}.pickle', 'rb') as f:
+                    return pickle.load(f)
+            else:
+                raise ValueError(f'basis must be x or y, was {basis}.')
+    else:
+        @lru_cache(maxsize=kwargs.get('cache_maxsize', 100))
+        def basis_transform(basis, site):
+            '''Returns a local basis transformation (as a sparse matrix) on
+            site i in a (2 ** num_sites)-dimensional system.'''
+            if site >= num_sites:
+                raise ValueError(f'Position was {site}, but must be smaller than num_sites {num_sites}')
+            if basis == 1:
+                left_half = sp.kron(sp.eye(2**site), 1/np.sqrt(2) * np.array([[1,1], [1,-1]], dtype=COMPLEX_TYPE))
+                return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
+            elif basis == 2:
+                left_half = sp.kron(sp.eye(2**site), .5 * np.array([[1+1j,1-1j], [1-1j, 1+1j]], dtype=COMPLEX_TYPE))
+                return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
+            else:
+                raise ValueError(f'basis must be x or y, was {basis}.')
+    # draw samples
     for i in range(num_sites):
         if basis[i] == 3:
             pass
         else:
-            vec = basis_transform(basis[i], i, num_sites).dot(vec)
+            vec = basis_transform(basis[i], i).dot(vec)
     rng = kwargs.get('rng', np.random.default_rng())
     if hasattr(kwargs, 'seed'):
         warnings.warn('''The seed keyword argument is ignored. Instead supply a np.random.Generator
