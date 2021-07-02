@@ -50,6 +50,21 @@ def save_basis_transforms(dir, num_sites):
         with open(f'{dir}/y{i}.pickle', 'xb') as f:
             pickle.dump(t, f)
 
+@lru_cache(1000)
+def basis_transform_generic(basis, site, num_sites):
+    '''Returns a local basis transformation (as a sparse matrix) on
+    site i in a (2 ** num_sites)-dimensional system.'''
+    if site >= num_sites:
+        raise ValueError(f'Position was {site}, but must be smaller than num_sites {num_sites}')
+    if basis == 1:
+        left_half = sp.kron(sp.eye(2**site), 1/np.sqrt(2) * np.array([[1,1], [1,-1]], dtype=COMPLEX_TYPE))
+        return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
+    elif basis == 2:
+        left_half = sp.kron(sp.eye(2**site), .5 * np.array([[1+1j,1-1j], [1-1j, 1+1j]], dtype=COMPLEX_TYPE))
+        return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
+    else:
+        raise ValueError(f'basis must be x or y, was {basis}.')
+
 def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
     '''
     Generate a number of measurement results, as bit strings, given a state vector.
@@ -69,8 +84,6 @@ def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
         rng (np.random.Generator): A RNG created with np.random.default_rng(seed).
             Note that seed is an optional argument. If not provided, a fresh PRNG is
             created.
-        cache_maxsize (int): Default is 100. Disabling caching (setting this argument
-            to 0) saves memory which might be necessary for large systems.
         basis_transforms_dir (str): A directory containing pickled basis transformations
             as 'x0.pickle', 'x1.pickle', ... and 'y0.pickle' and so on.
     
@@ -95,20 +108,7 @@ def draw_samples(vec, basis, num_samples, sequential_samples=False, **kwargs):
             else:
                 raise ValueError(f'basis must be x or y, was {basis}.')
     else:
-        @lru_cache(maxsize=kwargs.get('cache_maxsize', 100))
-        def basis_transform(basis, site):
-            '''Returns a local basis transformation (as a sparse matrix) on
-            site i in a (2 ** num_sites)-dimensional system.'''
-            if site >= num_sites:
-                raise ValueError(f'Position was {site}, but must be smaller than num_sites {num_sites}')
-            if basis == 1:
-                left_half = sp.kron(sp.eye(2**site), 1/np.sqrt(2) * np.array([[1,1], [1,-1]], dtype=COMPLEX_TYPE))
-                return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
-            elif basis == 2:
-                left_half = sp.kron(sp.eye(2**site), .5 * np.array([[1+1j,1-1j], [1-1j, 1+1j]], dtype=COMPLEX_TYPE))
-                return sp.kron(left_half, sp.eye(2**(num_sites-site-1))).asformat('csr')
-            else:
-                raise ValueError(f'basis must be x or y, was {basis}.')
+        basis_transform = lambda basis, site: basis_transform_generic(basis, site, num_sites)
     # draw samples
     for i in range(num_sites):
         if basis[i] == 3:

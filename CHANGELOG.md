@@ -13,6 +13,9 @@ enables caching when the system size is very large.
 - `sampling.draw_samples` accepts `basis_transforms_dir` as a keyword argument for reading the
 the transformations from disk. The directory can be created an populated before with the new
 `sampling.save_basis_transforms` method.
+### Removed
+- `cache_maxsize` keyword argument of `sampling.draw_samples` is ignored now, since the caching
+function needs to be defined outside of `draw_samples`.
 
 ## [0.0.4] - 2021-05-17
 ### Changed
