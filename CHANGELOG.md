@@ -6,6 +6,11 @@ and this project aims to adhere to [Semantic Versioning](https://semver.org/spec
 
 ## [Unreleased]
 
+## [0.1.0] - 2021-07-09
+### Added
+- Disordered Heisenberg model which has uniform XX, YY, and ZZ interactions, but a varying local X field.
+I.e. the number of parameters is `3 + num_sites`.
+
 ## [0.0.5] - 2021-07-02
 ### Added
 - New function `sampling.save_basis_transforms` pickles all basis transforms to disk. This effectively
