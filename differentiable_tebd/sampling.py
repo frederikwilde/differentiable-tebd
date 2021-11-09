@@ -44,11 +44,11 @@ def save_basis_transforms(dir, num_sites):
         left_half = sp.kron(sp.eye(2**i), 1/np.sqrt(2) * np.array([[1,1], [1,-1]], dtype=COMPLEX_TYPE))
         t = sp.kron(left_half, sp.eye(2**(num_sites-i-1))).asformat('csr')
         with open(f'{dir}/x{i}.pickle', 'xb') as f:
-            pickle.dump(t, f)
+            pickle.dump(t, f, protocol=4)
         left_half = sp.kron(sp.eye(2**i), .5 * np.array([[1+1j,1-1j], [1-1j, 1+1j]], dtype=COMPLEX_TYPE))
         t = sp.kron(left_half, sp.eye(2**(num_sites-i-1))).asformat('csr')
         with open(f'{dir}/y{i}.pickle', 'xb') as f:
-            pickle.dump(t, f)
+            pickle.dump(t, f, protocol=4)
 
 @lru_cache(1000)
 def basis_transform_generic(basis, site, num_sites):

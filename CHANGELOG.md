@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aims to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- `sampling.save_basis_transforms` now uses Pickle protocol 4 instead of 3 (which is the default).
+This enables the storage of transforms beyond the size of 4GB.
 
 ## [0.1.0] - 2021-07-09
 ### Added
