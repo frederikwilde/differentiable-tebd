@@ -5,38 +5,76 @@ import scipy.sparse as sp
 import scipy.stats
 import numpy as np
 import jax.numpy as jnp
+import jax
 import pickle
+import tensornetwork as tn
 from . import COMPLEX_TYPE
 
-def samples_from_mps(mps):
-    '''
-    Contracts the MPS with the specified projector and the Hermition conjugate MPS.
+z_proj_0 = jnp.array([[1, 0], [0, 0]], dtype=COMPLEX_TYPE)
+z_proj_1 = jnp.array([[0, 0], [0, 1]], dtype=COMPLEX_TYPE)
+x_proj_0 = jnp.array([[1, 1], [1, 1]], dtype=COMPLEX_TYPE) / 2
+x_proj_1 = jnp.array([[1, -1], [-1, 1]], dtype=COMPLEX_TYPE) / 2
+y_proj_0 = jnp.array([[1, -1j], [1j, 1]], dtype=COMPLEX_TYPE) / 2
+y_proj_1 = jnp.array([[1, 1j], [-1j, 1]], dtype=COMPLEX_TYPE) / 2
 
+dot = jnp.tensordot
+
+def sample_from_mps(mps, basis, key, num_samples):
+    keys = jax.random.split(key, num_samples+1)
+    batched_sample = jax.vmap(_one_sample_from_mps, in_axes=(None, None, 0))
+    return keys[0], batched_sample(mps, basis, keys[1:])
+
+@jax.jit
+def _one_sample_from_mps(mps, basis, key):
+    '''
     Args:
-        mps (array): MPS with dimensions (num_sites, chi, physical_dim, chi)
+        mps (jnp.array)
+        basis (list[int]): Valid entries are 1, 2, and 3 for X, Y, and Z, respectively.
+        key: JAX PRNG key.
     '''
-    raise NotImplementedError('Sampling from MPS is not implemented yet. See DOI: 10.1103/PhysRevX.8.031012 for details.')
-    # def _update_left(left, tensor_contractbool_tuple):
-    #     '''For scan function.'''
-    #     t, contract = tensor_contractbool_tuple
-    #     t1 = jax.lax.cond(
-    #         contract,
-    #         lambda x: jnp.tensordot(x, projector, axes=(1, 0)).transpose((0, 2, 1)),
-    #         lambda x: x,
-    #         t)
-    #     tt = jnp.tensordot(t1, t.conj(), axes=(1, 1))
-    #     return jnp.tensordot(left, tt, axes=((0,1), (0,2))), None
+    projectors_0 = [
+        lambda t: dot(t, x_proj_0, axes=(1, 1)),
+        lambda t: dot(t, y_proj_0, axes=(1, 1)),
+        lambda t: dot(t, z_proj_0, axes=(1, 1))
+    ]
+    projectors_1 = [
+        lambda t: dot(t, x_proj_1, axes=(1, 1)),
+        lambda t: dot(t, y_proj_1, axes=(1, 1)),
+        lambda t: dot(t, z_proj_1, axes=(1, 1))
+    ]
 
-    # L = mps.shape[0]
-    # probs = jnp.zeros(L, dtype=jnp.float64)
-    # contractbools = jnp.full(L, False)
-    # for i in range(L):
-    #     left = jnp.zeros((mps.shape[1], mps.shape[1]), dtype=COMPLEX_TYPE)
-    #     left = index_update(left, [0, 0], 1.)
-    #     left, _ = jax.lax.scan(_update_left, left, [mps, index_update(contractbools, i, True)])
-    #     probs = index_update(probs, i, left[0,0].real / mps_norm_squared)  
-    #     print(left[0,0].imag)
-    # return probs
+    def update_left(left, tensor_basis_rnd):
+        t, b, r = tensor_basis_rnd
+        sandwhich = dot(
+            jax.lax.switch(b-1, projectors_0, t),
+            t.conj(),
+            axes=(2, 1)
+        )
+        empty_sandwhich = dot(t, t.conj(), axes=(1, 1))
+        sandwhich_with_left = dot(left, sandwhich, axes=((0,1), (0,2)))
+        probability_0 = jnp.trace(sandwhich_with_left)
+        marginal = jnp.trace(dot(left, empty_sandwhich, axes=((0,1), (0,2))))
+        def true_fun(_):
+            sandwhich = dot(
+                jax.lax.switch(b-1, projectors_1, t),
+                t.conj(),
+                axes=(2, 1)
+            )
+            return dot(left, sandwhich, axes=((0,1), (0,2))), 1
+        return jax.lax.cond(
+            r > probability_0 / marginal,
+            true_fun,
+            lambda _: (sandwhich_with_left, 0),
+            ()
+        )
+        
+    left = jnp.zeros((mps.shape[1], mps.shape[1]), dtype=COMPLEX_TYPE)
+    left = left.at[0, 0].set(1.)
+    mps = tn.FiniteMPS(mps, canonicalize=True, center_position=0, backend='jax')
+    mps = jnp.array(mps.tensors)
+    rnd = jax.random.uniform(key, [mps.shape[0]])
+    _, bitstring = jax.lax.scan(update_left, left, [mps, basis, rnd])
+    return bitstring
 
 def save_basis_transforms(dir, num_sites):
     '''Pickles all basis transforms to specified directory.'''

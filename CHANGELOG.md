@@ -9,6 +9,9 @@ and this project aims to adhere to [Semantic Versioning](https://semver.org/spec
 - `sampling.save_basis_transforms` now uses Pickle protocol 4 instead of 3 (which is the default).
 This enables the storage of transforms beyond the size of 4GB.
 
+### Added
+- `sampling.sample_from_mps` is implemented.
+
 ## [0.1.0] - 2021-07-09
 ### Added
 - Disordered Heisenberg model which has uniform XX, YY, and ZZ interactions, but a varying local X field.
