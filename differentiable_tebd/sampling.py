@@ -19,19 +19,30 @@ y_proj_1 = jnp.array([[1, 1j], [-1j, 1]], dtype=COMPLEX_TYPE) / 2
 
 dot = jnp.tensordot
 
-def sample_from_mps(mps, basis, key, num_samples):
+def draw_samples_from_mps(mps, basis, key, num_samples):
+    '''
+    Creates measurement samples in a given basis from the probability-
+    distribution defined by an MPS.
+    WARNING: If the MPS is not normalized, e.g. because of perturbation
+    terms, the samples are not drawn correctly.
+
+    Args:
+        mps (jnp.ndarray)
+        basis (jnp.ndarray): A list of Pauli bases. Valid entries are 1, 2,
+        and 3, for X, Y, and Z respectively.
+        key (jnp.ndarray): A JAX PRNG key.
+        num_samples (int): Number of strings to sample.
+
+    Returns:
+        jnp.ndarray: A new PRNG key.
+        jnp.ndarray: Array of samples of shape (num_samples, len(mps))
+    '''
     keys = jax.random.split(key, num_samples+1)
     batched_sample = jax.vmap(_one_sample_from_mps, in_axes=(None, None, 0))
     return keys[0], batched_sample(mps, basis, keys[1:])
 
 @jax.jit
 def _one_sample_from_mps(mps, basis, key):
-    '''
-    Args:
-        mps (jnp.array)
-        basis (list[int]): Valid entries are 1, 2, and 3 for X, Y, and Z, respectively.
-        key: JAX PRNG key.
-    '''
     projectors_0 = [
         lambda t: dot(t, x_proj_0, axes=(1, 1)),
         lambda t: dot(t, y_proj_0, axes=(1, 1)),

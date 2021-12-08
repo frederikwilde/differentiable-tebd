@@ -10,7 +10,7 @@ and this project aims to adhere to [Semantic Versioning](https://semver.org/spec
 This enables the storage of transforms beyond the size of 4GB.
 
 ### Added
-- `sampling.sample_from_mps` is implemented.
+- `sampling.draw_samples_from_mps` is implemented.
 
 ## [0.1.0] - 2021-07-09
 ### Added
