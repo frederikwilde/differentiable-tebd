@@ -68,15 +68,15 @@ def contract_and_split(n1, n2, gate):
     u, s, v =  jax.scipy.linalg.svd(c.reshape(2*chi, 2*chi), full_matrices=False)
     # FIXME: derivative at zero
     s_sqrt = jnp.sqrt(s[:chi])
-    truncation_error = jnp.sum(s[chi:])
+    truncation_error_squared = jnp.sum(s[chi:] ** 2)
     u_out = (s_sqrt * u[:, :chi]).reshape(chi, 2, chi)
     v_out = (s_sqrt * v[:chi, :].transpose()).transpose().reshape(chi, 2, chi)
-    return u_out, v_out, truncation_error
+    return u_out, v_out, truncation_error_squared
 
-def apply_gate(mps, i, gate, truncation_error):
-    n1, n2, err = contract_and_split(mps[i], mps[i+1], gate)
+def apply_gate(mps, i, gate):
+    n1, n2, err_sqr = contract_and_split(mps[i], mps[i+1], gate)
     mps = index_update(mps, index[i:i+2], jnp.array([n1, n2]))
-    return mps, truncation_error + err
+    return mps, err_sqr
 
 ### MPS contractions
 def norm_squared(mps):

@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aims to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- `mps_utils.contract_and_split` and `mps_utils.apply_gate` now return the sum of all _squared_ errors.
+I.e. all truncated singular values squared and summed up.
+- `physical_models.heisenberg` and `physical_models.heisenberg_disordered` also return the squared
+error now.
 
 ## [0.1.1] - 2021-12-08
 ### Changed

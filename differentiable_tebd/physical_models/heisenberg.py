@@ -71,31 +71,33 @@ def trotter_step(mps, gate_left, gate_middle, gate_right):
     '''
     shape = mps.shape
     L, Lh = shape[0], int(shape[0] / 2)
-    trunc_err = 0.
+    trunc_err_sqr = 0.
 
     def apply_gate_totuple(tensor_tuple):
         t1, t2 = tensor_tuple
-        n1, n2, err = contract_and_split(t1, t2, gate_middle)
-        return jnp.stack([n1, n2]), err
+        n1, n2, err_sqr = contract_and_split(t1, t2, gate_middle)
+        return jnp.stack([n1, n2]), err_sqr
     batched_apply_gate = jax.vmap(apply_gate_totuple)
 
     # even layer
-    mps, trunc_err = apply_gate(mps, 0, gate_left, trunc_err)
-    middle_tensors, errs = batched_apply_gate(
+    mps, err_sqr = apply_gate(mps, 0, gate_left)
+    trunc_err_sqr += err_sqr
+    middle_tensors, errs_sqr = batched_apply_gate(
         mps[2:L-2].reshape(Lh-2, 2, *shape[1:])
     )
     mps = index_update(mps, index[2:L-2], middle_tensors.reshape(L-4, *shape[1:]))
-    trunc_err += jnp.sum(errs)
-    mps, trunc_err = apply_gate(mps, L-2, gate_right, trunc_err)
+    trunc_err_sqr += jnp.sum(errs_sqr)
+    mps, err_sqr = apply_gate(mps, L-2, gate_right)
+    trunc_err_sqr += err_sqr
 
     # odd layer
-    middle_tensors, errs = batched_apply_gate(
+    middle_tensors, errs_sqr = batched_apply_gate(
         mps[1:L-1].reshape(Lh-1, 2, *shape[1:])
     )
     mps = index_update(mps, index[1:L-1], middle_tensors.reshape(L-2, *shape[1:]))
-    trunc_err += jnp.sum(errs)
+    trunc_err_sqr += jnp.sum(errs_sqr)
 
-    return mps, trunc_err
+    return mps, trunc_err_sqr
 
 @checkpoint
 def trotter_step_order2(mps, gate_left, gate_middle, gate_middle_halftime, gate_right):
@@ -122,39 +124,41 @@ def trotter_step_order2(mps, gate_left, gate_middle, gate_middle_halftime, gate_
     '''
     shape = mps.shape
     L, Lh = shape[0], int(shape[0] / 2)
-    trunc_err = 0.
+    trunc_err_sqr = 0.
 
     def apply_gate_totuple(tensor_tuple, gate):
         t1, t2 = tensor_tuple
-        n1, n2, err = contract_and_split(t1, t2, gate)
-        return jnp.stack([n1, n2]), err
+        n1, n2, err_sqr = contract_and_split(t1, t2, gate)
+        return jnp.stack([n1, n2]), err_sqr
     batched_apply_gate = jax.vmap(lambda t: apply_gate_totuple(t, gate_middle))
     batched_apply_gate_halftime = jax.vmap(lambda t: apply_gate_totuple(t, gate_middle_halftime))
 
     # odd layer
-    middle_tensors, errs = batched_apply_gate_halftime(
+    middle_tensors, errs_sqr = batched_apply_gate_halftime(
         mps[1:L-1].reshape(Lh-1, 2, *shape[1:])
     )
     mps = index_update(mps, index[1:L-1], middle_tensors.reshape(L-2, *shape[1:]))
-    trunc_err = jnp.sum(errs)
+    trunc_err_sqr += jnp.sum(errs_sqr)
     
     # even layer
-    mps, trunc_err = apply_gate(mps, 0, gate_left, trunc_err)
-    middle_tensors, errs = batched_apply_gate(
+    mps, err_sqr = apply_gate(mps, 0, gate_left)
+    trunc_err_sqr += err_sqr
+    middle_tensors, errs_sqr = batched_apply_gate(
         mps[2:L-2].reshape(Lh-2, 2, *shape[1:])
     )
     mps = index_update(mps, index[2:L-2], middle_tensors.reshape(L-4, *shape[1:]))
-    trunc_err += jnp.sum(errs)
-    mps, trunc_err = apply_gate(mps, L-2, gate_right, trunc_err)
+    trunc_err_sqr += jnp.sum(errs_sqr)
+    mps, err_sqr = apply_gate(mps, L-2, gate_right)
+    trunc_err_sqr += err_sqr
 
     # odd layer
-    middle_tensors, errs = batched_apply_gate_halftime(
+    middle_tensors, errs_sqr = batched_apply_gate_halftime(
         mps[1:L-1].reshape(Lh-1, 2, *shape[1:])
     )
     mps = index_update(mps, index[1:L-1], middle_tensors.reshape(L-2, *shape[1:]))
-    trunc_err += jnp.sum(errs)
+    trunc_err_sqr += jnp.sum(errs_sqr)
 
-    return mps, trunc_err
+    return mps, trunc_err_sqr
 
 @partial(jit, static_argnums=[2])
 def mps_evolution(params, deltat, steps, mps):
@@ -176,13 +180,13 @@ def mps_evolution(params, deltat, steps, mps):
     gate_right = expm(-1.j * deltat,
         x*jXX + y*jYY + z*jZZ + h*(.5*jX1 + jX2)).reshape(2,2,2,2)
     
-    mps, errors = jax.lax.scan(
+    mps, errors_squared = jax.lax.scan(
             lambda m, _: trotter_step(m, gate_left, gate_middle, gate_right),
             mps,
             None,
             length=steps
         ) 
-    return mps, errors
+    return mps, errors_squared
 
 @partial(jit, static_argnums=[2])
 def mps_evolution_order2(params, deltat, steps, mps):
@@ -206,10 +210,10 @@ def mps_evolution_order2(params, deltat, steps, mps):
     gate_right = expm(-1.j * deltat,
         x*jXX + y*jYY + z*jZZ + h*(.5*jX1 + jX2)).reshape(2,2,2,2)
     
-    mps, errors = jax.lax.scan(
+    mps, errors_squared = jax.lax.scan(
             lambda m, _: trotter_step_order2(m, gate_left, gate_middle, gate_middle_halftime, gate_right),
             mps,
             None,
             length=steps
         )
-    return mps, errors
+    return mps, errors_squared
