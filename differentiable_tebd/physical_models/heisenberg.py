@@ -81,8 +81,6 @@ def trotter_step(mps, gate_left, gate_middle, gate_right):
 
     # even layer
     mps, trunc_err = apply_gate(mps, 0, gate_left, trunc_err)
-#     for i in jnp.arange(2, L-2, 2):
-#         mps, trunc_err = apply_gate(mps, i, gate_middle, trunc_err)
     middle_tensors, errs = batched_apply_gate(
         mps[2:L-2].reshape(Lh-2, 2, *shape[1:])
     )
@@ -91,8 +89,6 @@ def trotter_step(mps, gate_left, gate_middle, gate_right):
     mps, trunc_err = apply_gate(mps, L-2, gate_right, trunc_err)
 
     # odd layer
-#     for i in jnp.arange(1, L-1, 2):
-#         mps, trunc_err = apply_gate(mps, i, gate_middle, trunc_err)
     middle_tensors, errs = batched_apply_gate(
         mps[1:L-1].reshape(Lh-1, 2, *shape[1:])
     )
