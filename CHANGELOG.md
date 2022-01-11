@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aims to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.0] - 2022-01-11
 ### Changed
 - `mps_utils.contract_and_split` and `mps_utils.apply_gate` now return the sum of all _squared_ errors.
 I.e. all truncated singular values squared and summed up.
