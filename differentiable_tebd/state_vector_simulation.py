@@ -1,19 +1,32 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 
-def vec_simulation(hamiltonian, times, **kwargs):
-    '''A crude full-state-vector Schroedinger time evolution solver evolving from
-    the |00...0> state.'''
-    initial_state = np.zeros(hamiltonian.shape[0], dtype='complex')
-    initial_state[0] = 1.
-    # time evolution
+def vec_simulation(hamiltonian, times, initial_state=None, **kwargs):
+    '''
+    A crude full-state-vector Schroedinger time evolution solver.
+
+    Args:
+        hamiltonian (np.ndarray): Hermitian n by n array.
+        times (list[float]): A list of times at which the state vector
+            is to be recorded. The last value determines the length of
+            the time evolution.
+        initial_state (np.ndarray or None): Default is None. In this case
+            the all zero state |00...0> is the initial state vector.
+            Otherwise a normalized array of length n must be passed.
+        kwargs: Directly passed to scipy.integrate.solve_ivp
+
+    Returns:
+        np.ndarray: A transposed list of state vectors at the specified times.
+    '''
+    if initial_state is None:
+        initial_state = np.zeros(hamiltonian.shape[0], dtype=hamiltonian.dtype)
+        initial_state[0] = 1.
     sol = solve_ivp(lambda _, v: -1.j*hamiltonian.dot(v), (0., times[-1]), initial_state, t_eval=times, **kwargs)
     if sol['success']:
         print(f"State evolution completed successfully with {sol['nfev']} function calls.")
         return sol['y']
     else:
-        msg = sol['message']
-        raise RuntimeError(f'State vector evolution was not successful: {msg}')
+        raise RuntimeError(f"State vector evolution was not successful: {sol['message']}")
 
 def mps_to_vector(mps):
     '''Convert MPS to full state vector.'''
