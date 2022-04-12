@@ -5,8 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aims to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.1] - 2022-04-12
 ### Changed
 - `state_vector_simulation.vec_simulation` accepts a user specified `initial_state` now.
+### Added
+- The function `mps_utils.mps_neel_state` to prepare the Neel state as an MPS.
 
 ## [0.2.0] - 2022-01-11
 ### Changed
