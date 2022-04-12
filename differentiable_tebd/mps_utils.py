@@ -22,8 +22,28 @@ class HashableArray(np.ndarray):
     def __ne__(self, other):
         return jnp.any(jnp.array(self) != jnp.array(other))
 
+def add_perturbation(mps, perturbation, rng):
+    '''
+    Add a random perturbation to the mps to avoid degeneracies.
+
+    Args:
+        perturbation (float): Factor of random perturbation
+            to add.
+        rng (np.random.Generator): A RNG created with np.random.default_rng
+            Default is None, in which case a fresh PRNG is created.
+    Returns:
+        array: Perturbed MPS.
+    '''
+    if rng is None:
+        rng = np.random.default_rng()
+    r1 = 2 * rng.random(mps.shape) - 1.
+    r2 = 2 * rng.random(mps.shape) - 1.
+    return mps + perturbation * (r1 + 1.j*r2)
+
 def mps_zero_state(num_sites, chi, perturbation=None, rng=None):
     '''
+    The all zero state: |00000...>
+
     Args:
         num_sites (int): Number of sites.
         chi (int): Bond dimension.
@@ -39,11 +59,33 @@ def mps_zero_state(num_sites, chi, perturbation=None, rng=None):
     for i in range(num_sites):
         mps = index_update(mps, (i, 0, 0, 0), 1.)
     if perturbation is not None:
-        if rng is None:
-            rng = np.random.default_rng()
-        r1 = 2 * rng.random(mps.shape) - 1.
-        r2 = 2 * rng.random(mps.shape) - 1.
-        return mps + perturbation * (r1 + 1.j*r2)
+        return add_perturbation(mps, perturbation, rng)
+    else:
+        return mps
+
+def mps_neel_state(num_sites, chi, perturbation=None, rng=None):
+    '''
+    Prepare the Neel state as an MPS: |010101...>
+
+    Args:
+        num_sites (int): Number of sites.
+        chi (int): Bond dimension.
+        perturbation (float): Factor of random perturbation
+            to add. Default is None.
+        rng (np.random.Generator): A RNG created with np.random.default_rng
+            Default is None, in which case a fresh PRNG is created.
+        
+    Returns:
+        array: MPS
+    '''
+    mps = jnp.zeros((num_sites, chi, 2, chi), dtype=COMPLEX_TYPE)
+    for i in range(num_sites):
+        if i % 2 == 0:
+            mps = index_update(mps, (i, 0, 0, 0), 1.)
+        else:
+            mps = index_update(mps, (i, 0, 1, 0), 1.)
+    if perturbation is not None:
+        return add_perturbation(mps, perturbation, rng)
     else:
         return mps
 
