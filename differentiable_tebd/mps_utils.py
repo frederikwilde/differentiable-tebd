@@ -1,7 +1,6 @@
 import numpy as np
 import jax
 from jax import numpy as jnp
-from jax.ops import index_update, index
 from . import COMPLEX_TYPE
 
 X = np.array([[0, 1], [1, 0]], dtype=COMPLEX_TYPE)
@@ -57,7 +56,7 @@ def mps_zero_state(num_sites, chi, perturbation=None, rng=None):
     '''
     mps = jnp.zeros((num_sites, chi, 2, chi), dtype=COMPLEX_TYPE)
     for i in range(num_sites):
-        mps = index_update(mps, (i, 0, 0, 0), 1.)
+        mps = mps.at[i, 0, 0, 0].set(1.)
     if perturbation is not None:
         return add_perturbation(mps, perturbation, rng)
     else:
@@ -81,9 +80,9 @@ def mps_neel_state(num_sites, chi, perturbation=None, rng=None):
     mps = jnp.zeros((num_sites, chi, 2, chi), dtype=COMPLEX_TYPE)
     for i in range(num_sites):
         if i % 2 == 0:
-            mps = index_update(mps, (i, 0, 0, 0), 1.)
+            mps = mps.at[i, 0, 0, 0].set(1.)
         else:
-            mps = index_update(mps, (i, 0, 1, 0), 1.)
+            mps = mps.at[i, 0, 1, 0].set(1.)
     if perturbation is not None:
         return add_perturbation(mps, perturbation, rng)
     else:
@@ -117,7 +116,7 @@ def contract_and_split(n1, n2, gate):
 
 def apply_gate(mps, i, gate):
     n1, n2, err_sqr = contract_and_split(mps[i], mps[i+1], gate)
-    mps = index_update(mps, index[i:i+2], jnp.array([n1, n2]))
+    mps = mps.at[i:i+2].set(jnp.array([n1, n2]))
     return mps, err_sqr
 
 ### MPS contractions
@@ -131,7 +130,7 @@ def norm_squared(mps):
         return jnp.tensordot(tensor, t1, axes=((0,1), (0,1))), None
 
     left = jnp.zeros((mps.shape[1], mps.shape[1]), dtype=COMPLEX_TYPE)
-    left = index_update(left, (0, 0), 1.)
+    left = left.at[0, 0].set(1.)
     left, _ = jax.lax.scan(_update_left, left, mps)
     return left[0,0].real
 
@@ -174,6 +173,6 @@ def probability(mpsX, mpsY, mpsZ, bitstring, basis, mps_norm_squared=1.):
         mps_norm_squared (float): Squared l2 norm of the MPS.
     '''
     left = jnp.zeros(mpsX.shape[1], dtype=COMPLEX_TYPE)
-    left = index_update(left, 0, 1.)
+    left = left.at[0].set(1.)
     left, _ = jax.lax.scan(_update_left, left, [mpsX, mpsY, mpsZ, bitstring, basis])
     return jnp.abs(left[0]) ** 2 / mps_norm_squared

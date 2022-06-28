@@ -3,7 +3,6 @@ import scipy.sparse as sp
 import jax
 import jax.numpy as jnp
 from jax import jit, checkpoint
-from jax.ops import index_update, index
 from functools import partial
 from .. import COMPLEX_TYPE
 from ..mps_utils import (
@@ -85,7 +84,7 @@ def trotter_step(mps, gate_left, gate_middle, gate_right):
     middle_tensors, errs_sqr = batched_apply_gate(
         mps[2:L-2].reshape(Lh-2, 2, *shape[1:])
     )
-    mps = index_update(mps, index[2:L-2], middle_tensors.reshape(L-4, *shape[1:]))
+    mps = mps.at[2:L-2].set(middle_tensors.reshape(L-4, *shape[1:]))
     trunc_err_sqr += jnp.sum(errs_sqr)
     mps, err_sqr = apply_gate(mps, L-2, gate_right)
     trunc_err_sqr += err_sqr
@@ -94,7 +93,7 @@ def trotter_step(mps, gate_left, gate_middle, gate_right):
     middle_tensors, errs_sqr = batched_apply_gate(
         mps[1:L-1].reshape(Lh-1, 2, *shape[1:])
     )
-    mps = index_update(mps, index[1:L-1], middle_tensors.reshape(L-2, *shape[1:]))
+    mps = mps.at[1:L-1].set(middle_tensors.reshape(L-2, *shape[1:]))
     trunc_err_sqr += jnp.sum(errs_sqr)
 
     return mps, trunc_err_sqr
@@ -137,7 +136,7 @@ def trotter_step_order2(mps, gate_left, gate_middle, gate_middle_halftime, gate_
     middle_tensors, errs_sqr = batched_apply_gate_halftime(
         mps[1:L-1].reshape(Lh-1, 2, *shape[1:])
     )
-    mps = index_update(mps, index[1:L-1], middle_tensors.reshape(L-2, *shape[1:]))
+    mps = mps.at[1:L-1].set(middle_tensors.reshape(L-2, *shape[1:]))
     trunc_err_sqr += jnp.sum(errs_sqr)
     
     # even layer
@@ -146,7 +145,7 @@ def trotter_step_order2(mps, gate_left, gate_middle, gate_middle_halftime, gate_
     middle_tensors, errs_sqr = batched_apply_gate(
         mps[2:L-2].reshape(Lh-2, 2, *shape[1:])
     )
-    mps = index_update(mps, index[2:L-2], middle_tensors.reshape(L-4, *shape[1:]))
+    mps = mps.at[2:L-2].set(middle_tensors.reshape(L-4, *shape[1:]))
     trunc_err_sqr += jnp.sum(errs_sqr)
     mps, err_sqr = apply_gate(mps, L-2, gate_right)
     trunc_err_sqr += err_sqr
@@ -155,7 +154,7 @@ def trotter_step_order2(mps, gate_left, gate_middle, gate_middle_halftime, gate_
     middle_tensors, errs_sqr = batched_apply_gate_halftime(
         mps[1:L-1].reshape(Lh-1, 2, *shape[1:])
     )
-    mps = index_update(mps, index[1:L-1], middle_tensors.reshape(L-2, *shape[1:]))
+    mps = mps.at[1:L-1].set(middle_tensors.reshape(L-2, *shape[1:]))
     trunc_err_sqr += jnp.sum(errs_sqr)
 
     return mps, trunc_err_sqr
