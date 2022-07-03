@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aims to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.2] - 2022-06-03
 ### Changed
 - Replaced JAX' deprecated `index_update` function by the new notation.
 - Implemented custom JVP rule for the SVD to avoid issues with degeneracies.
