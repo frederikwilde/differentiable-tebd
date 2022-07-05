@@ -6,6 +6,10 @@ and this project aims to adhere to [Semantic Versioning](https://semver.org/spec
 
 ## [Unreleased]
 
+## [0.2.3] - 2022-06-05
+### Changed
+- Fixed bug in SVD JVP rule.
+
 ## [0.2.2] - 2022-06-03
 ### Changed
 - Replaced JAX' deprecated `index_update` function by the new notation.

@@ -143,14 +143,14 @@ def svd_jvp_rule(primals, tangents):
         I = jax.lax.expand_dims(jnp.eye(n, dtype=A.dtype), range(V.ndim - 2))
         dV = dV + jnp.matmul(I - jnp.matmul(V, Vt), jnp.matmul(_H(dA), U)) / s_dim
 
-    return (s, U, Vt), (ds, dU, _H(dV))
+    return (U, s, Vt), (dU, ds, _H(dV))
 
 
 def contract_and_split(n1, n2, gate):
     chi = n1.shape[2]
     n = jnp.tensordot(n1, n2, axes=(2, 0))
     c = jnp.tensordot(n, gate, axes=((1,2), (2,3))).transpose((0, 2, 3, 1))
-    u, s, v = jax.scipy.linalg.svd(c.reshape(2*chi, 2*chi), compute_uv=True, full_matrices=False)
+    u, s, v = svd(c.reshape(2*chi, 2*chi))
     # FIXME: derivative at zero
     s_sqrt = jnp.sqrt(s[:chi])
     truncation_error_squared = jnp.sum(s[chi:] ** 2)
