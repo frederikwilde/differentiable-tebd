@@ -5,9 +5,8 @@ import jax.numpy as jnp
 import differentiable_tebd.physical_models.heisenberg_disordered as hd
 import differentiable_tebd.physical_models.heisenberg as hs
 from differentiable_tebd.state_vector_simulation import mps_to_vector, vec_simulation
-from differentiable_tebd.mps_utils import mps_zero_state
-
-from differentiable_tebd.mps_utils import probability, local_basis_transform
+from differentiable_tebd.utils.mps import mps_zero_state
+from differentiable_tebd.utils.mps_qubits import probability, local_basis_transform
 
 
 def summed_probabilities(mps, bitstrings):

@@ -10,7 +10,7 @@ try:
         jax.config.update("jax_enable_x64", True)
         COMPLEX_TYPE = jax.numpy.complex128
     else:
-        raise EnvironmentError(f"Environment variable can only be 'complex64' or 'complex128', was {type}.")
+        raise EnvironmentError(f"TEBD_COMPLEX_TYPE can only be 'complex64' or 'complex128', was {type}.")
 except KeyError:
     jax.config.update("jax_enable_x64", True)
     COMPLEX_TYPE = jax.numpy.complex128

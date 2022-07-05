@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import os
 import shutil
 from differentiable_tebd import sampling
-from differentiable_tebd.mps_utils import mps_zero_state
+from differentiable_tebd.utils.mps import mps_zero_state
 from differentiable_tebd.state_vector_simulation import mps_to_vector
 from differentiable_tebd.physical_models.heisenberg_disordered import mps_evolution_order2
 

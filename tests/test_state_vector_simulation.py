@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from differentiable_tebd.state_vector_simulation import vec_simulation, mps_to_vector
-from differentiable_tebd.mps_utils import X, Y, Z
+from differentiable_tebd.utils import X, Y, Z
 
 class TestVecSimulation(unittest.TestCase):
     def setUp(self):
