@@ -73,7 +73,8 @@ def mps_evolution_order2(params, deltat, steps, mps):
         float: Cumulated errors
     '''
     shape = mps.shape
-    L, Lh = shape[0], int(shape[0] / 2)
+    L = shape[0]
+    Lh = L // 2
     x, y, z = params[:3]
     h = params[3:]
     odd_layer_gates = make_gate_batched(h[1:L-1].reshape(Lh-1,2), x, y, z, .5*deltat)

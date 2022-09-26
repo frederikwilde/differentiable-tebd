@@ -38,7 +38,7 @@ def apply_gate_batched(mps, i_from, i_to, gate):
     elif len(gate.shape) == 5:
         apply = jax.vmap(apply_gate_totuple, in_axes=(0, 0))
     else:
-        raise ValueError(f'gate has invalid shape. Should be either 4, or 5 dimensional, was {gate.shape}.')
+        raise ValueError(f'gate has invalid shape. Should be either 4, or 5 dimensional, shape was {gate.shape}.')
 
     tensors, errs_sqr = apply(
         mps[i_from:i_to].reshape(K//2, 2, *mps.shape[1:]),
