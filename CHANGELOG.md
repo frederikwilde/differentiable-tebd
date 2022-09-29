@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aims to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Refactoring. Moved the Trotter-step functions into the `utils.tebd` module. MPS methods specific
+to physical dimension 2 are separated, in `mps_qubits`, from generic MPS methods.
+- `utils.tebd.trotter_step` and `utils.tebd.trotter_step_order2` accept gates in the bulk as one
+gate, which gets applied to all specified sites, or an array gates to be applied to the specified
+sites.
+### Added
+- Tests for the gradient of Heisenberg and disordered Heisenberg model.
 
 ## [0.2.3] - 2022-06-05
 ### Changed
