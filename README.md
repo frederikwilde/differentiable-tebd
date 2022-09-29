@@ -16,3 +16,7 @@ You need to install it manually as this differs depending on the hardware you wa
 ## Versioning
 
 Be sure to checkout the latest version tag (e.g. `git checkout 0.0.0`) to be able to reproduce results easily.
+
+## Demo
+
+For a brief demo for how to use this package please have a look at our [repository](https://github.com/frederikwilde/scalable-dynamical-hamiltonian-learning/tree/main/demo) for the paper.
