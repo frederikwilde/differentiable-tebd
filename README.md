@@ -2,6 +2,8 @@
 
 A Python package using mostly JAX to implement the time-evolving block decimation algorithm in a differentiable way along with some data generation tools to synthesize Hamiltonian learning problems.
 
+This package was used to generate the numerical results in our paper on [Scalably learning quantum many-body Hamiltonians from dynamical data](https://arxiv.org/abs/2209.14328).
+
 ## Environment
 
 The default type for complex-valued arrays is double precision, i.e. `jax.numpy.complex128`.
@@ -15,8 +17,23 @@ You need to install it manually as this differs depending on the hardware you wa
 
 ## Versioning
 
-Be sure to checkout the latest version tag (e.g. `git checkout 0.0.0`) to be able to reproduce results easily.
+Be sure to checkout the relevant or latest version tag (e.g. `git checkout 0.0.0`) to be able to reproduce results easily.
 
 ## Demo
 
 For a brief demo for how to use this package please have a look at our [repository](https://github.com/frederikwilde/scalable-dynamical-hamiltonian-learning/tree/main/demo) for the paper.
+
+## Citing
+
+If you use (parts of) this package, please cite our [paper](https://arxiv.org/abs/2209.14328).
+```
+@misc{wilde_scalably_2022,
+  doi = {10.48550/ARXIV.2209.14328},
+  url = {https://arxiv.org/abs/2209.14328},
+  author = {Wilde, Frederik and Kshetrimayum, Augustine and Roth, Ingo and Hangleiter, Dominik and Sweke, Ryan and Eisert, Jens},
+  title = {Scalably learning quantum many-body Hamiltonians from dynamical data},
+  publisher = {arXiv},
+  year = {2022},
+  copyright = {Creative Commons Attribution 4.0 International}
+}
+```
