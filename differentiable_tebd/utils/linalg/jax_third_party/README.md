@@ -1,0 +1,2 @@
+This submodule contains modified code from [JAX](https://github.com/google/jax).
+The changes have been indicated in the code and a copy of the license under which the original code is published is contained in this directory.
