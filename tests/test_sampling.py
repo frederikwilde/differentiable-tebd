@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import os
 import shutil
-from differentiable_tebd import sampling
+from differentiable_tebd.sampling import qubits
 from differentiable_tebd.utils.mps import mps_zero_state
 from differentiable_tebd.state_vector_simulation import mps_to_vector
 from differentiable_tebd.physical_models.heisenberg_disordered import mps_evolution_order2
@@ -43,22 +43,22 @@ class TestDrawSamples(unittest.TestCase):
 
     def test_draw_samples(self):
         for v, b, r in zip(self.vecs, self.bases, self.results):
-            out = sampling.draw_samples(v, b, 1, rng=rng())
+            out = qubits.draw_samples(v, b, 1, rng=rng())
             np.testing.assert_array_equal(out[0], r)
     
     def test_batch(self):
-        out = sampling.draw_samples(self.vec3, self.basis3, 10, rng=rng())
+        out = qubits.draw_samples(self.vec3, self.basis3, 10, rng=rng())
         np.testing.assert_array_equal(out, self.result3_seed12)
     
     def test_sequential(self):
-        out = sampling.draw_samples(self.vec3, self.basis3, 10, rng=rng(), sequential_samples=True)
+        out = qubits.draw_samples(self.vec3, self.basis3, 10, rng=rng(), sequential_samples=True)
         np.testing.assert_array_equal(out, self.result3_seed12)
     
     def test_pickled_transformations(self):
         trafo_dir = 'test_basis_transformations_84758903874982902843993'
         os.mkdir(trafo_dir)
-        sampling.save_basis_transforms(trafo_dir, 5)
-        out = sampling.draw_samples(self.vec3, self.basis3, 10, rng=rng(), basis_transforms_dir=trafo_dir)
+        qubits.save_basis_transforms(trafo_dir, 5)
+        out = qubits.draw_samples(self.vec3, self.basis3, 10, rng=rng(), basis_transforms_dir=trafo_dir)
         np.testing.assert_array_equal(out, self.result3_seed12)
         shutil.rmtree(trafo_dir)
 
@@ -71,8 +71,8 @@ class TestDrawSamplesMps(unittest.TestCase):
         params = jax.random.uniform(key, (self.num_sites+3,))
         mps, _ = mps_evolution_order2(params, .1, 10, mps)
         vec = mps_to_vector(mps)
-        prob_distribution = sampling.draw_samples(vec, basis.tolist(), 0)
-        _, samples = sampling.draw_samples_from_mps(mps, basis, key, 1000)
+        prob_distribution = qubits.draw_samples(vec, basis.tolist(), 0)
+        _, samples = qubits.draw_samples_from_mps(mps, basis, key, 1000)
         hist = self.samples_to_histogram(samples)
         self.assertLess(self.kl_divergence(prob_distribution, hist), 1e-2)
 

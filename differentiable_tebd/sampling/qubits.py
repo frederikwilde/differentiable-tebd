@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import jax
 import pickle
 import tensornetwork as tn
-from . import COMPLEX_TYPE
+from .. import COMPLEX_TYPE
 
 z_proj_0 = jnp.array([[1, 0], [0, 0]], dtype=COMPLEX_TYPE)
 z_proj_1 = jnp.array([[0, 0], [0, 1]], dtype=COMPLEX_TYPE)

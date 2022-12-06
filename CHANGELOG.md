@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aims to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- The `sampling` module is now relocated to `sampling.qubits` to allow for future integration of
+non-qubit systems.
 
 ## [0.2.4] - 2022-09-29
 ### Changed
