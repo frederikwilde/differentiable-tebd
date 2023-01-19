@@ -55,10 +55,12 @@ def trotter_step(mps, gate_left, gate_middle, gate_right):
     Applies one Trotter step to mps.
     gate1 is applied to all but the last pair of qubits.
     gate2 is only applied to the last pair as displayed below.
+    ```
     |  |  |  |  |  |  |  |
     [gl]  [gm]  [gm]  [gr]
     |  [gm]  [gm]  [gm]  |
     |  |  |  |  |  |  |  |
+    ```
 
     Args:
         mps (array): Input MPS.
@@ -97,13 +99,14 @@ def trotter_step_order2(mps, gate_left, gate_middle, gate_middle_halftime, gate_
     '''
     Number of qubits must be even!
     Applies one 2nd order Trotter step to mps.
-
+    ```
     |  |   |  |   |  |   |  |
     |  [gmh]  [gmh]  [gmh]  |
     [gl]   [gm]   [gm]   [gr]
     |  [gmh]  [gmh]  [gmh]  |
     |  |   |  |   |  |   |  |
-
+    ```
+    
     Args:
         mps (array): Input MPS.
         gate_left (array): is applied to the first and second qubit.
