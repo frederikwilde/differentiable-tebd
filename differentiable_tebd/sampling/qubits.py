@@ -39,6 +39,8 @@ def draw_samples_from_mps(mps, basis, key, num_samples):
     '''
     keys = jax.random.split(key, num_samples+1)
     batched_sample = jax.vmap(_one_sample_from_mps, in_axes=(None, None, 0))
+    mps = tn.FiniteMPS(mps, canonicalize=True, center_position=0, backend='jax')
+    mps = jnp.array(mps.tensors)
     return keys[0], batched_sample(mps, basis, keys[1:])
 
 @jax.jit
@@ -81,8 +83,6 @@ def _one_sample_from_mps(mps, basis, key):
         
     left = jnp.zeros((mps.shape[1], mps.shape[1]), dtype=COMPLEX_TYPE)
     left = left.at[0, 0].set(1.)
-    mps = tn.FiniteMPS(mps, canonicalize=True, center_position=0, backend='jax')
-    mps = jnp.array(mps.tensors)
     rnd = jax.random.uniform(key, [mps.shape[0]])
     _, bitstring = jax.lax.scan(update_left, left, [mps, basis, rnd])
     return bitstring
